@@ -1,0 +1,13 @@
+node_modules/
+out/
+*.tsbuildinfo
+*.js.map
+*.log
+build/
+dist/
+npm-debug.log*
+.next/
+.idea/
+*~
+.env.local
+.cache/
