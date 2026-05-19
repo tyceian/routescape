@@ -1,39 +1,34 @@
-/**
- * Cache directive options passed to Cache-Control header builder.
- * Mirrors the options accepted by buildCacheControlHeader.
- */
-export interface CacheDirectives {
+import { Request } from 'express';
+
+export interface CacheControlOptions {
   maxAge?: number;
   sMaxAge?: number;
-  noCache?: boolean;
   noStore?: boolean;
+  noCache?: boolean;
   mustRevalidate?: boolean;
   proxyRevalidate?: boolean;
-  public?: boolean;
   private?: boolean;
+  public?: boolean;
   immutable?: boolean;
   staleWhileRevalidate?: number;
   staleIfError?: number;
 }
 
-/**
- * A single declarative cache rule mapping a route pattern to cache directives.
- */
-export interface CacheRule {
-  /** Route path or pattern. Use trailing `*` for prefix matching. */
-  path: string;
-  /** HTTP methods this rule applies to. Defaults to all methods if omitted. */
-  methods?: string[];
-  /** Cache-Control directives to apply when this rule matches. */
-  directives: CacheDirectives;
+export interface VaryOptions {
+  headers: string[];
 }
 
-/**
- * Options accepted by the routeCache middleware factory.
- */
-export interface RouteCacheOptions {
-  /** Ordered list of cache rules. First match wins. */
-  rules: CacheRule[];
-  /** Fallback directives applied when no rule matches. */
-  defaultDirectives?: CacheDirectives;
+export interface RouteRule {
+  path: string | RegExp;
+  methods?: string[];
+  cacheControl?: CacheControlOptions;
+  vary?: VaryOptions;
 }
+
+export interface RouteCacheOptions {
+  rules: RouteRule[];
+  defaultCacheControl?: CacheControlOptions;
+  defaultVary?: VaryOptions;
+}
+
+export type RouteMatcher = (req: Request, rule: RouteRule) => boolean;

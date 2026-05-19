@@ -1,56 +1,63 @@
-/**
- * Basic example showing routescape used in an Express app.
- * Run with: ts-node examples/basic-server.ts
- */
 import express from 'express';
-import { routeCache } from '../src';
+import { routeCache } from '../src/routeCache';
+import { varyHeader } from '../src/varyHeader';
+import { cacheControl } from '../src/cacheControl';
 
 const app = express();
 
+// Apply a global Vary: Accept-Encoding header to all responses
+app.use(varyHeader({ headers: ['Accept-Encoding'] }));
+
+// Apply route-level caching rules with optional vary overrides
 app.use(
   routeCache({
+    defaultCacheControl: { noStore: true },
+    defaultVary: { headers: ['Accept'] },
     rules: [
       {
-        // Static assets — cache aggressively
-        path: '/static/*',
+        path: '/api/products',
         methods: ['GET'],
-        directives: { maxAge: 31536000, public: true, immutable: true },
+        cacheControl: { public: true, maxAge: 60, staleWhileRevalidate: 30 },
+        vary: { headers: ['Accept', 'Accept-Language'] },
       },
       {
-        // API reads — short cache with revalidation
-        path: '/api/*',
+        path: '/api/products/*',
         methods: ['GET'],
-        directives: { maxAge: 60, mustRevalidate: true, public: true },
+        cacheControl: { public: true, maxAge: 300, immutable: false },
       },
       {
-        // API writes — never cache
-        path: '/api/*',
-        methods: ['POST', 'PUT', 'PATCH', 'DELETE'],
-        directives: { noStore: true },
+        path: '/api/user',
+        cacheControl: { private: true, maxAge: 0, mustRevalidate: true },
+      },
+      {
+        path: /^\/static\/.+/,
+        cacheControl: { public: true, maxAge: 31536000, immutable: true },
       },
     ],
-    // Fallback for anything not matched above
-    defaultDirectives: { noCache: true },
   })
 );
 
-app.get('/static/logo.png', (_req, res) => {
-  res.json({ file: 'logo.png' });
+app.get('/api/products', (_req, res) => {
+  res.json([{ id: 1, name: 'Widget' }, { id: 2, name: 'Gadget' }]);
 });
 
-app.get('/api/users', (_req, res) => {
-  res.json([{ id: 1, name: 'Alice' }]);
+app.get('/api/products/:id', (req, res) => {
+  res.json({ id: req.params.id, name: 'Widget' });
 });
 
-app.post('/api/users', (_req, res) => {
-  res.status(201).json({ id: 2, name: 'Bob' });
+app.get('/api/user', (_req, res) => {
+  res.json({ id: 42, name: 'Alice' });
 });
 
-app.get('/health', (_req, res) => {
-  res.json({ status: 'ok' });
+app.get('/static/:file', (req, res) => {
+  res.send(`Content of ${req.params.file}`);
+});
+
+app.get('/', (_req, res) => {
+  res.send('routescape basic server running');
 });
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-  console.log(`Example server running on http://localhost:${PORT}`);
+  console.log(`Server listening on http://localhost:${PORT}`);
 });

@@ -1,52 +1,63 @@
-import { Request, Response, NextFunction, RequestHandler } from 'express';
+import { Request, Response, NextFunction } from 'express';
+import { RouteCacheOptions, RouteRule } from './types';
 import { buildCacheControlHeader } from './cacheControl';
-import { CacheRule, RouteCacheOptions } from './types';
+import { buildVaryHeader, mergeVaryHeaders } from './varyHeader';
 
 /**
- * Matches a route pattern against a request path.
- * Supports exact matches and simple wildcard (*) at the end.
+ * Checks whether a request path matches a given route pattern.
  */
-export function matchRoute(pattern: string, path: string): boolean {
-  if (pattern === path) return true;
-  if (pattern.endsWith('*')) {
-    const prefix = pattern.slice(0, -1);
-    return path.startsWith(prefix);
+export function matchRoute(reqPath: string, pattern: string | RegExp): boolean {
+  if (pattern instanceof RegExp) {
+    return pattern.test(reqPath);
   }
-  return false;
+  if (pattern.endsWith('*')) {
+    return reqPath.startsWith(pattern.slice(0, -1));
+  }
+  return reqPath === pattern;
 }
 
 /**
- * Finds the first matching cache rule for a given request path and method.
+ * Finds the first matching rule for the incoming request.
  */
 export function findMatchingRule(
-  rules: CacheRule[],
-  path: string,
-  method: string
-): CacheRule | undefined {
-  return rules.find((rule) => {
-    const methodMatch =
-      !rule.methods ||
-      rule.methods.map((m) => m.toUpperCase()).includes(method.toUpperCase());
-    return methodMatch && matchRoute(rule.path, path);
+  req: Request,
+  rules: RouteRule[]
+): RouteRule | undefined {
+  return rules.find(rule => {
+    const pathMatches = matchRoute(req.path, rule.path);
+    if (!pathMatches) return false;
+
+    if (rule.methods && rule.methods.length > 0) {
+      return rule.methods
+        .map(m => m.toUpperCase())
+        .includes(req.method.toUpperCase());
+    }
+
+    return true;
   });
 }
 
 /**
- * Express middleware factory that applies declarative cache rules
- * to matched routes by setting the Cache-Control header.
+ * Express middleware factory that applies cache-control and vary headers
+ * based on declarative route rules.
  */
-export function routeCache(options: RouteCacheOptions): RequestHandler {
-  const { rules, defaultDirectives } = options;
-
+export function routeCache(options: RouteCacheOptions) {
   return (req: Request, res: Response, next: NextFunction): void => {
-    const rule = findMatchingRule(rules, req.path, req.method);
+    const rule = findMatchingRule(req, options.rules);
 
-    if (rule) {
-      const header = buildCacheControlHeader(rule.directives);
-      res.setHeader('Cache-Control', header);
-    } else if (defaultDirectives) {
-      const header = buildCacheControlHeader(defaultDirectives);
-      res.setHeader('Cache-Control', header);
+    const cacheOpts = rule?.cacheControl ?? options.defaultCacheControl;
+    if (cacheOpts) {
+      const header = buildCacheControlHeader(cacheOpts);
+      if (header) res.setHeader('Cache-Control', header);
+    }
+
+    const varyOpts = rule?.vary ?? options.defaultVary;
+    if (varyOpts && varyOpts.headers.length > 0) {
+      const existing = res.getHeader('Vary') as string | undefined;
+      const newVary = existing
+        ? mergeVaryHeaders(existing, varyOpts.headers)
+        : buildVaryHeader(varyOpts.headers);
+      res.setHeader('Vary', newVary);
     }
 
     next();
