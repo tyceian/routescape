@@ -30,6 +30,14 @@ export function mergeVaryHeaders(existing: string, incoming: string[]): string {
 }
 
 /**
+ * Returns true if the given Vary header value contains a wildcard (*),
+ * which means the response varies based on all request headers.
+ */
+export function isVaryWildcard(varyHeader: string): boolean {
+  return varyHeader.split(',').map(h => h.trim()).includes('*');
+}
+
+/**
  * Express middleware that sets the Vary header based on provided options.
  */
 export function varyHeader(options: VaryOptions) {
@@ -39,6 +47,12 @@ export function varyHeader(options: VaryOptions) {
     }
 
     const existing = res.getHeader('Vary') as string | undefined;
+
+    // If the existing Vary header is already a wildcard, no need to add more.
+    if (existing && isVaryWildcard(existing)) {
+      return next();
+    }
+
     const newValue = existing
       ? mergeVaryHeaders(existing, options.headers)
       : buildVaryHeader(options.headers);
