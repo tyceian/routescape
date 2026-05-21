@@ -1,15 +1,18 @@
-import { Request } from 'express';
+import { Request, Response } from 'express';
 
 export interface CacheRule {
   path: string | RegExp;
+  methods?: string[];
   maxAge?: number;
   sMaxAge?: number;
-  private?: boolean;
+  staleWhileRevalidate?: number;
+  staleIfError?: number;
   noCache?: boolean;
   noStore?: boolean;
   mustRevalidate?: boolean;
-  staleWhileRevalidate?: number;
-  staleIfError?: number;
+  private?: boolean;
+  public?: boolean;
+  immutable?: boolean;
 }
 
 export interface RouteCacheOptions {
@@ -17,19 +20,30 @@ export interface RouteCacheOptions {
   defaultMaxAge?: number;
 }
 
-export interface VaryHeaderOptions {
-  fields: string[];
-  merge?: boolean;
+export interface VaryRule {
+  path: string | RegExp;
+  headers: string[];
+  methods?: string[];
+}
+
+export interface VaryOptions {
+  rules: VaryRule[];
 }
 
 export interface ETagOptions {
   weak?: boolean;
-  customGenerator?: (body: string) => string;
+  customGenerator?: (req: Request, res: Response, body: string) => string;
 }
 
-export interface StaleDirectives {
+export interface StaleRule {
+  path: string | RegExp;
   staleWhileRevalidate?: number;
   staleIfError?: number;
+  methods?: string[];
+}
+
+export interface StaleOptions {
+  rules: StaleRule[];
 }
 
 export interface NoCachePattern {
@@ -37,26 +51,31 @@ export interface NoCachePattern {
   methods?: string[];
 }
 
-export interface NoCacheRoutesOptions {
+export interface NoCacheOptions {
   patterns: NoCachePattern[];
-  header?: string;
-}
-
-export interface ConditionalGetOptions {
-  trustXForwardedFor?: boolean;
 }
 
 export interface StatusCacheRule {
-  status: number | number[] | '2xx' | '3xx' | '4xx' | '5xx';
-  maxAge?: number;
+  statusCode: number | number[];
+  maxAge: number;
   sMaxAge?: number;
-  private?: boolean;
-  noCache?: boolean;
 }
 
-export interface CacheByStatusOptions {
+export interface StatusCacheOptions {
   rules: StatusCacheRule[];
-  overrideExisting?: boolean;
+  defaultMaxAge?: number;
 }
 
-export type CacheKeyGenerator = (req: Request) => string;
+export interface SurrogateRule {
+  path: string | RegExp;
+  methods?: string[];
+  maxAge?: number;
+  staleWhileRevalidate?: number;
+  staleIfError?: number;
+  noStore?: boolean;
+}
+
+export interface SurrogateCacheOptions {
+  rules: SurrogateRule[];
+  stripOnResponse?: boolean;
+}

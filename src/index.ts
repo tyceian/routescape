@@ -1,3 +1,10 @@
-export { buildCacheControlHeader, cacheControl } from './cacheControl';
+export { cacheControl, buildCacheControlHeader } from './cacheControl';
 export { routeCache, matchRoute, findMatchingRule } from './routeCache';
-export type { CacheDirectives, CacheRule, RouteCacheOptions } from './types';
+export { varyHeader, buildVaryHeader, mergeVaryHeaders } from './varyHeader';
+export { etagSupport, generateETag, isETagMatch } from './etagSupport';
+export { staleWhileRevalidate, buildStaleDirectives, mergeStaleDirectives } from './staleWhileRevalidate';
+export { noCacheRoutes, matchesNoCachePattern, buildNoCacheHeader } from './noCacheRoutes';
+export { conditionalGet, parseIfModifiedSince, isNotModified } from './conditionalGet';
+export { cacheByStatus, findStatusRule, buildStatusCacheHeader } from './cacheByStatus';
+export { surrogateCacheControl, buildSurrogateHeader, mergeSurrogateHeaders } from './surrogateCacheControl';
+export * from './types';
