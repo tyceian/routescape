@@ -1,47 +1,62 @@
 import { Request } from 'express';
 
-export interface CacheControlOptions {
+export interface CacheRule {
+  path: string | RegExp;
   maxAge?: number;
   sMaxAge?: number;
-  public?: boolean;
   private?: boolean;
   noCache?: boolean;
   noStore?: boolean;
   mustRevalidate?: boolean;
-  proxyRevalidate?: boolean;
-  immutable?: boolean;
-}
-
-export interface StaleWhileRevalidateOptions {
   staleWhileRevalidate?: number;
   staleIfError?: number;
 }
 
-export interface VaryOptions {
-  headers: string[];
+export interface RouteCacheOptions {
+  rules: CacheRule[];
+  defaultMaxAge?: number;
+}
+
+export interface VaryHeaderOptions {
+  fields: string[];
+  merge?: boolean;
 }
 
 export interface ETagOptions {
   weak?: boolean;
+  customGenerator?: (body: string) => string;
 }
 
-export interface RouteRule {
+export interface StaleDirectives {
+  staleWhileRevalidate?: number;
+  staleIfError?: number;
+}
+
+export interface NoCachePattern {
   path: string | RegExp;
   methods?: string[];
-  cacheControl?: CacheControlOptions;
-  stale?: StaleWhileRevalidateOptions;
-  vary?: VaryOptions;
-  etag?: ETagOptions;
 }
 
-export interface RouteCacheOptions {
-  rules: RouteRule[];
-  defaultRule?: RouteRule;
+export interface NoCacheRoutesOptions {
+  patterns: NoCachePattern[];
+  header?: string;
 }
 
-export interface MatchResult {
-  rule: RouteRule;
-  params: Record<string, string>;
+export interface ConditionalGetOptions {
+  trustXForwardedFor?: boolean;
 }
 
-export type RouteMatcherFn = (req: Request) => RouteRule | null;
+export interface StatusCacheRule {
+  status: number | number[] | '2xx' | '3xx' | '4xx' | '5xx';
+  maxAge?: number;
+  sMaxAge?: number;
+  private?: boolean;
+  noCache?: boolean;
+}
+
+export interface CacheByStatusOptions {
+  rules: StatusCacheRule[];
+  overrideExisting?: boolean;
+}
+
+export type CacheKeyGenerator = (req: Request) => string;
