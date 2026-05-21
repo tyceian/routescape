@@ -1,43 +1,47 @@
 import { Request } from 'express';
 
-export interface CacheRule {
-  path: string | RegExp;
-  methods?: string[];
-  maxAge?: number;
-  sMaxAge?: number;
-  noStore?: boolean;
-  noCache?: boolean;
-  mustRevalidate?: boolean;
-  public?: boolean;
-  private?: boolean;
-  immutable?: boolean;
-  staleWhileRevalidate?: number;
-  staleIfError?: number;
-  vary?: string[];
-  etag?: boolean | ETagOptions;
-}
-
-export interface RouteCacheOptions {
-  rules: CacheRule[];
-  defaultRule?: Partial<CacheRule>;
-}
-
 export interface CacheControlOptions {
   maxAge?: number;
   sMaxAge?: number;
-  noStore?: boolean;
-  noCache?: boolean;
-  mustRevalidate?: boolean;
   public?: boolean;
   private?: boolean;
+  noCache?: boolean;
+  noStore?: boolean;
+  mustRevalidate?: boolean;
+  proxyRevalidate?: boolean;
   immutable?: boolean;
+}
+
+export interface StaleWhileRevalidateOptions {
   staleWhileRevalidate?: number;
   staleIfError?: number;
+}
+
+export interface VaryOptions {
+  headers: string[];
 }
 
 export interface ETagOptions {
   weak?: boolean;
-  respectClientETag?: boolean;
 }
 
-export type RouteMatchFn = (req: Request) => boolean;
+export interface RouteRule {
+  path: string | RegExp;
+  methods?: string[];
+  cacheControl?: CacheControlOptions;
+  stale?: StaleWhileRevalidateOptions;
+  vary?: VaryOptions;
+  etag?: ETagOptions;
+}
+
+export interface RouteCacheOptions {
+  rules: RouteRule[];
+  defaultRule?: RouteRule;
+}
+
+export interface MatchResult {
+  rule: RouteRule;
+  params: Record<string, string>;
+}
+
+export type RouteMatcherFn = (req: Request) => RouteRule | null;
