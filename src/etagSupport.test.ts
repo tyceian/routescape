@@ -23,6 +23,19 @@ describe('generateETag', () => {
     const b = generateETag('bar');
     expect(a).not.toBe(b);
   });
+
+  it('handles empty string content', () => {
+    const etag = generateETag('');
+    expect(etag).toMatch(/^W\/"[a-f0-9]{16}"$/);
+  });
+
+  it('weak and strong ETags differ for the same content', () => {
+    const weak = generateETag('same content', true);
+    const strong = generateETag('same content', false);
+    expect(weak).not.toBe(strong);
+    expect(weak.startsWith('W/')).toBe(true);
+    expect(strong.startsWith('W/')).toBe(false);
+  });
 });
 
 describe('isETagMatch', () => {
