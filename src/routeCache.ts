@@ -5,6 +5,8 @@ import { buildVaryHeader, mergeVaryHeaders } from './varyHeader';
 
 /**
  * Checks whether a request path matches a given route pattern.
+ * Supports exact string matches, wildcard suffix patterns (e.g. "/api/*"),
+ * and regular expressions.
  */
 export function matchRoute(reqPath: string, pattern: string | RegExp): boolean {
   if (pattern instanceof RegExp) {
@@ -18,6 +20,7 @@ export function matchRoute(reqPath: string, pattern: string | RegExp): boolean {
 
 /**
  * Finds the first matching rule for the incoming request.
+ * Rules are evaluated in order; the first match wins.
  */
 export function findMatchingRule(
   req: Request,
@@ -38,6 +41,29 @@ export function findMatchingRule(
 }
 
 /**
+ * Applies the Cache-Control header to the response based on the resolved options.
+ * Does nothing if no options are provided or the resulting header is empty.
+ */
+function applyCacheControl(res: Response, opts: RouteCacheOptions['defaultCacheControl']): void {
+  if (!opts) return;
+  const header = buildCacheControlHeader(opts);
+  if (header) res.setHeader('Cache-Control', header);
+}
+
+/**
+ * Applies the Vary header to the response, merging with any existing value.
+ * Does nothing if no options are provided or the headers list is empty.
+ */
+function applyVary(res: Response, opts: RouteCacheOptions['defaultVary']): void {
+  if (!opts || opts.headers.length === 0) return;
+  const existing = res.getHeader('Vary') as string | undefined;
+  const newVary = existing
+    ? mergeVaryHeaders(existing, opts.headers)
+    : buildVaryHeader(opts.headers);
+  res.setHeader('Vary', newVary);
+}
+
+/**
  * Express middleware factory that applies cache-control and vary headers
  * based on declarative route rules.
  */
@@ -45,20 +71,8 @@ export function routeCache(options: RouteCacheOptions) {
   return (req: Request, res: Response, next: NextFunction): void => {
     const rule = findMatchingRule(req, options.rules);
 
-    const cacheOpts = rule?.cacheControl ?? options.defaultCacheControl;
-    if (cacheOpts) {
-      const header = buildCacheControlHeader(cacheOpts);
-      if (header) res.setHeader('Cache-Control', header);
-    }
-
-    const varyOpts = rule?.vary ?? options.defaultVary;
-    if (varyOpts && varyOpts.headers.length > 0) {
-      const existing = res.getHeader('Vary') as string | undefined;
-      const newVary = existing
-        ? mergeVaryHeaders(existing, varyOpts.headers)
-        : buildVaryHeader(varyOpts.headers);
-      res.setHeader('Vary', newVary);
-    }
+    applyCacheControl(res, rule?.cacheControl ?? options.defaultCacheControl);
+    applyVary(res, rule?.vary ?? options.defaultVary);
 
     next();
   };
