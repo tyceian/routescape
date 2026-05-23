@@ -1,81 +1,91 @@
 import { Request, Response } from 'express';
 
-export interface CacheRule {
-  path: string | RegExp;
-  methods?: string[];
+export interface CacheControlOptions {
   maxAge?: number;
   sMaxAge?: number;
-  staleWhileRevalidate?: number;
-  staleIfError?: number;
+  public?: boolean;
+  private?: boolean;
   noCache?: boolean;
   noStore?: boolean;
   mustRevalidate?: boolean;
-  private?: boolean;
-  public?: boolean;
+  proxyRevalidate?: boolean;
   immutable?: boolean;
+  staleWhileRevalidate?: number;
+  staleIfError?: number;
+}
+
+export interface RouteRule {
+  path: string | RegExp;
+  methods?: string[];
+  cache: CacheControlOptions;
+  vary?: string[];
 }
 
 export interface RouteCacheOptions {
-  rules: CacheRule[];
-  defaultMaxAge?: number;
-}
-
-export interface VaryRule {
-  path: string | RegExp;
-  headers: string[];
-  methods?: string[];
+  rules: RouteRule[];
+  defaultCache?: CacheControlOptions;
 }
 
 export interface VaryOptions {
-  rules: VaryRule[];
+  fields: string[];
+  append?: boolean;
 }
 
 export interface ETagOptions {
   weak?: boolean;
-  customGenerator?: (req: Request, res: Response, body: string) => string;
+  onHit?: (req: Request, res: Response) => void;
 }
 
-export interface StaleRule {
-  path: string | RegExp;
+export interface StaleDirectives {
   staleWhileRevalidate?: number;
   staleIfError?: number;
-  methods?: string[];
-}
-
-export interface StaleOptions {
-  rules: StaleRule[];
-}
-
-export interface NoCachePattern {
-  path: string | RegExp;
-  methods?: string[];
 }
 
 export interface NoCacheOptions {
-  patterns: NoCachePattern[];
+  patterns: Array<string | RegExp>;
+  header?: string;
+}
+
+export interface ConditionalGetOptions {
+  onNotModified?: (req: Request, res: Response) => void;
 }
 
 export interface StatusCacheRule {
-  statusCode: number | number[];
-  maxAge: number;
-  sMaxAge?: number;
+  status: number | number[];
+  cache: CacheControlOptions;
 }
 
-export interface StatusCacheOptions {
+export interface CacheByStatusOptions {
   rules: StatusCacheRule[];
-  defaultMaxAge?: number;
+  passthrough?: boolean;
 }
 
-export interface SurrogateRule {
-  path: string | RegExp;
-  methods?: string[];
+export interface SurrogateOptions {
   maxAge?: number;
-  staleWhileRevalidate?: number;
-  staleIfError?: number;
+  sMaxAge?: number;
+  tags?: string[];
   noStore?: boolean;
+  noCache?: boolean;
 }
 
-export interface SurrogateCacheOptions {
-  rules: SurrogateRule[];
-  stripOnResponse?: boolean;
+export interface CacheKeyOptions {
+  includeQuery?: boolean | string[];
+  includeHeaders?: string[];
+  transform?: (req: Request) => string;
+}
+
+export interface CoalescingOptions {
+  ttl?: number;
+  onCoalesce?: (key: string) => void;
+}
+
+export interface WarmingEntry {
+  priority?: number;
+  headers?: Record<string, string>;
+}
+
+export interface CacheWarmingOptions {
+  onWarm?: (path: string, statusCode: number) => void;
+  onError?: (path: string, err: Error) => void;
+  markHeader?: string;
 }
