@@ -1,14 +1,20 @@
-import { Request, Response } from 'express';
+import { Request, Response, NextFunction } from 'express';
+
+export type CacheMiddleware = (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => void;
 
 export interface CacheControlOptions {
   maxAge?: number;
   sMaxAge?: number;
-  public?: boolean;
-  private?: boolean;
-  noCache?: boolean;
   noStore?: boolean;
+  noCache?: boolean;
   mustRevalidate?: boolean;
   proxyRevalidate?: boolean;
+  private?: boolean;
+  public?: boolean;
   immutable?: boolean;
   staleWhileRevalidate?: number;
   staleIfError?: number;
@@ -18,25 +24,25 @@ export interface RouteRule {
   path: string | RegExp;
   methods?: string[];
   cache: CacheControlOptions;
-  vary?: string[];
 }
 
 export interface RouteCacheOptions {
   rules: RouteRule[];
   defaultCache?: CacheControlOptions;
+  vary?: string[];
 }
 
 export interface VaryOptions {
   fields: string[];
-  append?: boolean;
+  merge?: boolean;
 }
 
 export interface ETagOptions {
   weak?: boolean;
-  onHit?: (req: Request, res: Response) => void;
+  customGenerator?: (body: string) => string;
 }
 
-export interface StaleDirectives {
+export interface StaleOptions {
   staleWhileRevalidate?: number;
   staleIfError?: number;
 }
@@ -47,7 +53,7 @@ export interface NoCacheOptions {
 }
 
 export interface ConditionalGetOptions {
-  onNotModified?: (req: Request, res: Response) => void;
+  trustXForwardedFor?: boolean;
 }
 
 export interface StatusCacheRule {
@@ -57,35 +63,74 @@ export interface StatusCacheRule {
 
 export interface CacheByStatusOptions {
   rules: StatusCacheRule[];
-  passthrough?: boolean;
+  fallthrough?: boolean;
 }
 
 export interface SurrogateOptions {
   maxAge?: number;
-  sMaxAge?: number;
-  tags?: string[];
+  staleWhileRevalidate?: number;
+  staleIfError?: number;
   noStore?: boolean;
-  noCache?: boolean;
+  headerName?: string;
 }
 
 export interface CacheKeyOptions {
   includeQuery?: boolean | string[];
   includeHeaders?: string[];
+  prefix?: string;
   transform?: (req: Request) => string;
 }
 
 export interface CoalescingOptions {
-  ttl?: number;
-  onCoalesce?: (key: string) => void;
+  keyFn?: (req: Request) => string;
+  timeout?: number;
 }
 
-export interface WarmingEntry {
-  priority?: number;
+export interface WarmingRoute {
+  path: string;
+  interval?: number;
   headers?: Record<string, string>;
 }
 
 export interface CacheWarmingOptions {
-  onWarm?: (path: string, statusCode: number) => void;
-  onError?: (path: string, err: Error) => void;
-  markHeader?: string;
+  routes: WarmingRoute[];
+  baseUrl?: string;
+}
+
+export interface TagRule {
+  path: string | RegExp;
+  tags: string[] | ((req: Request) => string[]);
+}
+
+export interface CacheTaggingOptions {
+  rules: TagRule[];
+  headerName?: string;
+}
+
+export interface InvalidationRule {
+  trigger: string | RegExp;
+  invalidates: string[];
+}
+
+export interface CacheInvalidationOptions {
+  rules: InvalidationRule[];
+  headerName?: string;
+}
+
+export interface CachePurgeOptions {
+  token: string;
+  headerName?: string;
+  methods?: string[];
+}
+
+export interface CacheMetricsOptions {
+  enabled?: boolean;
+  headerName?: string;
+}
+
+export interface CacheDebugOptions {
+  enabled?: boolean;
+  headerPrefix?: string;
+  includeTimestamp?: boolean;
+  includeRoute?: boolean;
 }
