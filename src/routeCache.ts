@@ -64,15 +64,31 @@ function applyVary(res: Response, opts: RouteCacheOptions['defaultVary']): void 
 }
 
 /**
+ * Resolves the effective cache options for a request by merging the matched
+ * rule's settings with the provided defaults. Rule-level settings take
+ * precedence over defaults; if no rule matches, defaults are used as-is.
+ */
+export function resolveOptions(
+  rule: RouteRule | undefined,
+  options: RouteCacheOptions
+): { cacheControl: RouteCacheOptions['defaultCacheControl']; vary: RouteCacheOptions['defaultVary'] } {
+  return {
+    cacheControl: rule?.cacheControl ?? options.defaultCacheControl,
+    vary: rule?.vary ?? options.defaultVary,
+  };
+}
+
+/**
  * Express middleware factory that applies cache-control and vary headers
  * based on declarative route rules.
  */
 export function routeCache(options: RouteCacheOptions) {
   return (req: Request, res: Response, next: NextFunction): void => {
     const rule = findMatchingRule(req, options.rules);
+    const { cacheControl, vary } = resolveOptions(rule, options);
 
-    applyCacheControl(res, rule?.cacheControl ?? options.defaultCacheControl);
-    applyVary(res, rule?.vary ?? options.defaultVary);
+    applyCacheControl(res, cacheControl);
+    applyVary(res, vary);
 
     next();
   };
